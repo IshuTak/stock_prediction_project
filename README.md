@@ -32,4 +32,4 @@ matplotlib==3.5.1
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/stock_prediction_project.git
+   git clone https://github.com/IshuTak/stock_prediction_project.git
