@@ -23,14 +23,14 @@ This project predicts stock prices using an LSTM neural network combined with se
 
 ## Installation
 
--pandas==1.4.2
--numpy==1.21.5
--yfinance==0.1.70
--nltk==3.6.7
--scikit-learn==1.0.2
--requests==2.27.1
--tensorflow==2.8.0
--matplotlib==3.5.1
+- pandas==1.4.2
+- numpy==1.21.5
+- yfinance==0.1.70
+- nltk==3.6.7
+- scikit-learn==1.0.2
+- requests==2.27.1
+- tensorflow==2.8.0
+- matplotlib==3.5.1
 
 ### Prerequisites
 
