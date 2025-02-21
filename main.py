@@ -1,4 +1,3 @@
-# main.py
 
 import pandas as pd
 import numpy as np
@@ -19,14 +18,14 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Download NLTK data
+
 try:
     nltk.data.find('vader_lexicon')
 except LookupError:
     nltk.download('vader_lexicon')
 
 def get_stock_data(ticker, start_date, end_date):
-    """Fetch stock data using yfinance."""
+    
     try:
         stock_data = yf.download(ticker, start=start_date, end=end_date)
         if stock_data.empty:
@@ -39,7 +38,7 @@ def get_stock_data(ticker, start_date, end_date):
         return None
 
 def get_news_sentiment(ticker, api_key, start_date, end_date):
-    """Fetch news and perform daily sentiment analysis."""
+    
     import numpy as np  # Ensure numpy is imported here
     if not api_key:
         print("Warning: No NewsAPI key provided. Skipping sentiment analysis.")
@@ -91,38 +90,38 @@ def get_news_sentiment(ticker, api_key, start_date, end_date):
     return sentiment_df
 
 def calculate_technical_indicators(data):
-    """Calculate technical indicators."""
+    
     df = data.copy()
 
-    # Moving averages
+    
     df['MA5'] = df['Close'].rolling(window=5).mean()
     df['MA20'] = df['Close'].rolling(window=20).mean()
     df['MA50'] = df['Close'].rolling(window=50).mean()
 
-    # MACD
+    
     exp1 = df['Close'].ewm(span=12, adjust=False).mean()
     exp2 = df['Close'].ewm(span=26, adjust=False).mean()
     df['MACD'] = exp1 - exp2
     df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
 
-    # RSI
+    
     delta = df['Close'].diff()
     gain = delta.where(delta > 0, 0).rolling(window=14).mean()
     loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
     rs = gain / (loss + 1e-10)
     df['RSI'] = 100 - (100 / (1 + rs))
 
-    # Additional indicators
+    
     df['Returns'] = df['Close'].pct_change()
     df['Volatility'] = df['Returns'].rolling(window=20).std()
     df['Volume_MA'] = df['Volume'].rolling(window=20).mean()
 
-    # Fill NaN values
+    
     df = df.fillna(method='bfill').fillna(method='ffill')
     return df
 
 def prepare_data(stock_data, sequence_length):
-    """Prepare data for LSTM model."""
+    
     features = ['Close', 'Volume', 'MA5', 'MA20', 'MA50', 'RSI', 'MACD',
                 'Signal_Line', 'Returns', 'Volatility', 'Volume_MA', 'Sentiment']
 
@@ -143,13 +142,13 @@ def prepare_data(stock_data, sequence_length):
     X = np.array(X)
     y = np.array(y)
 
-    # Shuffle the data
+    
     X, y = shuffle(X, y, random_state=42)
 
     return X, y, feature_scaler, target_scaler
 
 def create_model(sequence_length, n_features):
-    """Create LSTM model."""
+    
     model = Sequential([
         LSTM(128, return_sequences=True, input_shape=(sequence_length, n_features)),
         BatchNormalization(),
@@ -174,40 +173,40 @@ def create_model(sequence_length, n_features):
     return model
 
 def main():
-    # Parameters
+    
     ticker = 'NVDA'
     sequence_length = 90  # Increased to capture longer-term trends
     news_api_key = 'YOUR_NEWSAPI_KEY'  # Replace with your NewsAPI key
 
     try:
-        # Get dates
+        
         end_date = datetime.now()
         start_date = end_date - timedelta(days=365*3)  # 3 years of data
         print(f"Fetching data for {ticker} from {start_date.date()} to {end_date.date()}")
 
-        # Get stock data
+        
         stock_data = get_stock_data(ticker, start_date, end_date)
         if stock_data is None or stock_data.empty:
             return
 
-        # Get news sentiment
+        
         print("\nFetching news sentiment...")
         sentiment_df = get_news_sentiment(ticker, news_api_key, start_date, end_date)
 
-        # Merge the sentiment data with stock_data
+        
         stock_data = stock_data.merge(sentiment_df, left_index=True, right_index=True, how='left')
-        # Fill any missing sentiment values
+        
         stock_data['Sentiment'] = stock_data['Sentiment'].fillna(method='ffill').fillna(0)
 
-        # Calculate technical indicators
+        
         print("\nCalculating technical indicators...")
         stock_data = calculate_technical_indicators(stock_data)
 
-        # Prepare data
+        
         print("Preparing data for model...")
         X, y, feature_scaler, target_scaler = prepare_data(stock_data, sequence_length)
 
-        # Split data
+       
         split_idx = int(len(X) * 0.9)  # Using 90% for training
         X_train, X_test = X[:split_idx], X[split_idx:]
         y_train, y_test = y[:split_idx], y[split_idx:]
@@ -215,7 +214,7 @@ def main():
         print(f"Training set size: {X_train.shape}")
         print(f"Test set size: {X_test.shape}")
 
-        # Create and train model
+        
         print("\nCreating and training model...")
         model = create_model(sequence_length, X.shape[2])
 
@@ -241,7 +240,7 @@ def main():
             )
         ]
 
-        # Train model
+        
         history = model.fit(
             X_train, y_train,
             epochs=200,          # Increased epochs
@@ -251,15 +250,15 @@ def main():
             verbose=1
         )
 
-        # Make predictions
+        
         print("\nMaking predictions...")
         predictions = model.predict(X_test)
 
-        # Inverse transform predictions
+        
         predictions_actual = target_scaler.inverse_transform(predictions)
         y_test_actual = target_scaler.inverse_transform(y_test.reshape(-1, 1))
 
-        # Calculate metrics
+        
         mse = np.mean((predictions_actual - y_test_actual) ** 2)
         mae = np.mean(np.abs(predictions_actual - y_test_actual))
         rmse = np.sqrt(mse)
@@ -271,7 +270,7 @@ def main():
         print(f'Mean Absolute Error: {mae:.2f}')
         print(f'Mean Absolute Percentage Error: {mape:.2f}%')
 
-        # Make future prediction
+        
         last_sequence = X[-1:]
         predictions = []
         for _ in range(10):  # Monte Carlo simulation
@@ -292,7 +291,7 @@ def main():
         print(f'Predicted Change: {price_change:.2f}%')
         print(f'95% Confidence Interval: ${next_day_prediction_actual - 1.96 * prediction_std:.2f} to ${next_day_prediction_actual + 1.96 * prediction_std:.2f}')
 
-        # Plot results
+        
         plt.figure(figsize=(15, 7))
         plt.plot(y_test_actual, label='Actual', alpha=0.8)
         plt.plot(predictions_actual, label='Predicted', alpha=0.8)
@@ -303,7 +302,7 @@ def main():
         plt.grid(True)
         plt.show()
 
-        # Plot training history
+        
         plt.figure(figsize=(15, 7))
         plt.plot(history.history['loss'], label='Training Loss')
         plt.plot(history.history['val_loss'], label='Validation Loss')
